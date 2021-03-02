@@ -55,7 +55,7 @@ def get_info(country, borders: bool = False, requirements: bool = False):
     """Функция для получения информации о стране"""
 
     country = check_and_normalize(country)
-    response = country + '\n\n'
+    response = country.strip('\n').replace('\n(член ЕС)', '').replace('\n', ' ') + '\n\n'
     topic_href = get_topic_href(country)
 
     r = requests.get(topic_href)
