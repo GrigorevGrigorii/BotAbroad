@@ -3,6 +3,18 @@ from bs4 import BeautifulSoup
 import json
 
 
+def get_countries_by_region(region):
+    with open('files/regions.json', 'r') as regions_file:
+        regions = json.load(regions_file)
+        return regions[region]
+
+
+def get_regions():
+    with open('files/regions.json', 'r') as regions_file:
+        regions = json.load(regions_file)
+        return regions.keys()
+
+
 def check_and_normalize(country):
     """Функция для проверки наличия страны в базе. В случае наличия возвращает название страны как на сайте МИД"""
 
@@ -13,10 +25,8 @@ def check_and_normalize(country):
                 country = key
                 break
         else:
-            del countries
             raise CountryNotFoundError(country)
 
-    del countries
     return country
 
 
@@ -30,7 +40,6 @@ def get_topic_href(country):
                 topic_name = key
                 break
         else:
-            del topics
             raise CountryNotFoundError(country)
         del topics
 
@@ -44,10 +53,8 @@ def get_topic_href(country):
             href = topic['href']
             break
     else:
-        del all_topics
         raise TopicNotFoundError(topic_name)
 
-    del all_topics
     return href
 
 
@@ -55,7 +62,7 @@ def get_info(country, borders: bool = False, requirements: bool = False):
     """Функция для получения информации о стране"""
 
     country = check_and_normalize(country)
-    response = country.strip('\n').replace('\n(член ЕС)', '').replace('\n', ' ') + '\n\n'
+    response = country + '\n\n'
     topic_href = get_topic_href(country)
 
     r = requests.get(topic_href)
@@ -80,7 +87,6 @@ def get_info(country, borders: bool = False, requirements: bool = False):
             response += '\n\n' + soup.find('u').text
             break
 
-    del rows_from_topic
     return response
 
 
