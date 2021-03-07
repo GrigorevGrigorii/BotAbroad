@@ -1,10 +1,11 @@
 from flask import Flask, request
 import telegram
-from telebot.credentials import *
 from telebot import corona_restrictions
 from telebot.state import State
+import os
 
 
+bot_token = os.environ.get('TOKEN')
 bot = telegram.Bot(token=bot_token)
 state = State()  # здесь для каждого пользователя хранится спискок соятоний его бота
 # Возможные состояния:
