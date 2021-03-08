@@ -1,47 +1,24 @@
 import requests
 from bs4 import BeautifulSoup
-import json
 
 
 def get_countries_by_region(region):
-    with open('files/regions.json', 'r') as regions_file:
-        regions = json.load(regions_file)
-        return regions[region]
+    return regions[region]
 
 
 def get_regions():
-    with open('files/regions.json', 'r') as regions_file:
-        regions = json.load(regions_file)
-        return regions.keys()
-
-
-def check_and_normalize(country):
-    """Функция для проверки наличия страны в базе. В случае наличия возвращает название страны как на сайте МИД"""
-
-    with open('files/countries.json', 'r') as countries_file:
-        countries = json.load(countries_file)
-        for key, value in countries.items():
-            if country.lower() in value:
-                country = key
-                break
-        else:
-            raise CountryNotFoundError(country)
-
-    return country
+    return regions.keys()
 
 
 def get_topic_href(country):
     """Функция для получения ссылки на страницу с информацией о данной стране"""
 
-    with open('files/topics.json', 'r') as topics_file:
-        topics = json.load(topics_file)
-        for key, value in topics.items():
-            if country in value:
-                topic_name = key
-                break
-        else:
-            raise CountryNotFoundError(country)
-        del topics
+    for key, value in topics.items():
+        if country in value:
+            topic_name = key
+            break
+    else:
+        raise CountryNotFoundError(country)
 
     r = requests\
         .get('https://www.mid.ru/ru/informacia-dla-rossijskih-i-inostrannyh-grazdan-v-svazi-s-koronavirusnoj-infekciej')
@@ -49,7 +26,7 @@ def get_topic_href(country):
     all_topics = soup.find_all('a', {'class': 'anons-title'})
 
     for topic in all_topics:
-        if topic.text == topic_name:
+        if topic_name in topic.text:
             href = topic['href']
             break
     else:
@@ -61,9 +38,8 @@ def get_topic_href(country):
 def get_info(country, borders: bool = False, requirements: bool = False):
     """Функция для получения информации о стране"""
 
-    country = check_and_normalize(country)
-    response = country + '\n\n'
     topic_href = get_topic_href(country)
+    response = country + '\n\n'
 
     r = requests.get(topic_href)
     soup = BeautifulSoup(r.content, 'html.parser')
@@ -90,6 +66,24 @@ def get_info(country, borders: bool = False, requirements: bool = False):
     return response
 
 
+regions = {
+    'Северная и Южная Америка': ('Аргентина', 'Багамские острова', 'Белиз', 'Боливия', 'Бразилия', 'Венесуэла', 'Гайана', 'Гватемала', 'Гондурас', 'Доминиканская Республика', 'Канада', 'Колумбия', 'Коста-Рика', 'Куба', 'Мексика', 'Никарагуа', 'Панама', 'Парагвай', 'Перу', 'Сальвадор', 'США', 'Суринам', 'Уругвай', 'Чили', 'Эквадор'),
+    'Европа': ('Австрия', 'Албания', 'Бельгия', 'Болгария', 'Босния и Герцеговина', 'Великобритания', 'Венгрия', 'Германия', 'Греция', 'Дания', 'Ирландия', 'Исландия', 'Испания', 'Италия', 'Кипр', 'Латвия', 'Литва', 'Люксембург', 'Мальта', 'Нидерланды', 'Норвегия', 'Польша', 'Португалия', 'Румыния', 'Сан-Марино', 'Северная Македония', 'Сербия', 'Словакия', 'Словения', 'Турция', 'Финляндия', 'Франция', 'Хорватия', 'Черногория', 'Чехия', 'Швейцария', 'Швеция', 'Эстония'),
+    'Азия и Океания': ('Австралия', 'Бангладеш', 'Бруней-Даруссалам', 'Вьетнам', 'Демократическая Республика Восточный Тимор', 'Индия', 'Индонезия', 'Камбоджа', 'Кирибати', 'КНДР', 'КНР', 'Лаос', 'Малайзия', 'Мальдивская Республика', 'Монголия', 'Мьянма', 'Науру', 'Непал', 'Новая Зеландия', 'Пакистан', 'Папуа-Новая Гвинея', 'Республика Вануату', 'Республика Корея', 'Республика Фиджи', 'Самоа', 'Сингапур', 'Таиланд', 'Тонга', 'Тувалу', 'Филиппины', 'Шри-Ланка', 'Япония'),
+    'СНГ, Грузия, Абхазия и Южная Осетия': ('Абхазия', 'Азербайджан', 'Армения', 'Белоруссия', 'Грузия', 'Казахстан', 'Киргизия', 'Молдавия', 'Таджикистан', 'Туркменистан', 'Узбекистан', 'Украина', 'Южная Осетия'),
+    'Африка, Ближний и Средний Восток': ('Алжир', 'Ангола', 'Афганистан', 'Бахрейн', 'Бенин', 'Ботсвана', 'Буркина Фасо', 'Габон', 'Гана', 'Гвинея', 'Гвинея-Бисау', 'Демократическая Республика Конго', 'Джибути', 'Египет', 'Замбия', 'Зимбабве', 'Израиль', 'Иордания', 'Ирак', 'Иран', 'Кабо-Верде', 'Камерун', 'Катар', 'Кения', 'Конго (Республика Конго)', 'Кот-д’Ивуар', 'Кувейт', 'Лесото', 'Либерия', 'Ливан', 'Маврикий', 'Мавритания', 'Мадагаскар', 'Малави', 'Мали', 'Марокко', 'Мозамбик', 'Намибия', 'Нигер', 'Нигерия', 'ОАЭ', 'Оман', 'Руанда', 'Саудовская Аравия', 'Сейшельские острова', 'Сенегал', 'Сирия', 'Сомали', 'Сьерра-Леоне', 'Судан', 'Танзания', 'Того', 'Тунис', 'Уганда', 'Чад', 'Экваториальная Гвинея', 'Эритрея', 'Эфиопия', 'ЮАР', 'Южный Судан')
+}
+
+# здесь хранятся ключевые части названий статей с ограничениями для разных групп стран
+topics = {
+    'Северной и Южной Америки': regions['Северная и Южная Америка'],
+    'Европы': regions['Европа'],
+    'Азии и Океании': regions['Азия и Океания'],
+    'СНГ, Грузию, Абхазию и Южную Осетию': regions['СНГ, Грузия, Абхазия и Южная Осетия'],
+    'Африки, Ближнего и Среднего Востока': regions['Африка, Ближний и Средний Восток']
+}
+
+
 # Exceptions
 
 class CountryNotFoundError(Exception):
@@ -104,3 +98,5 @@ class TopicNotFoundError(Exception):
     def __init__(self, topic_name):
         self.message = f"There is no topic with such name: {topic_name}"
         super().__init__(self.message)
+
+
