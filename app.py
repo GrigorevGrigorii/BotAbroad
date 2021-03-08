@@ -127,7 +127,8 @@ def respond():
 
         else:
             # если ввели что-то неожиданное
-            bot.sendMessage(chat_id, "Я вас не понимаю. Введите /help, чтобы посмотреть доступные команды.")
+            markup = telegram.ReplyKeyboardRemove()
+            bot.sendMessage(chat_id, "Я вас не понимаю. Введите /help, чтобы посмотреть доступные команды.", reply_markup=markup)
 
     db.session.commit()
     return 'ok'
