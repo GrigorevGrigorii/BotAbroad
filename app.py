@@ -27,6 +27,7 @@ class State(db.Model):
     Состоянию покоя соответствует пустая строка.
     """
     __tablename__ = "states"
+    _id = db.Column(db.Integer, primary_key=True)
     chat_id = db.Column(db.Integer, unique=True, nullable=False)
     state = db.Column(db.String(40), default='')
     # Макисмальная длина состояния (включая возможные комбинации) не превышвает 38, поэтому здесь с запасом 40.
