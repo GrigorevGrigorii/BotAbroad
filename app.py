@@ -22,12 +22,13 @@ app = Flask(__name__)
 
 @app.route(f'/{bot_token}', methods=['POST'])
 def respond():
+    """Обработка поступающих от Телеграма запросов"""
+
     global state
 
     update = telegram.Update.de_json(request.get_json(force=True), bot)
 
     chat_id = update.message.chat.id
-
     text = update.message.text.encode('utf-8').decode()
 
     if text.startswith('/'):
@@ -41,8 +42,7 @@ def respond():
             bot.sendMessage(chat_id, """
 Для того, чтобы получить ответ бота используйте следующие команды:
 /borders - получить информацию о границе между определенной страной и Россией.
-/requirements - получить информацию о требованиях страны.
-            """, reply_markup=markup)
+/requirements - получить информацию о требованиях страны.""", reply_markup=markup)
 
         elif text == '/borders' or text == '/requirements':
             items = []
@@ -63,8 +63,7 @@ def respond():
 Вы используете какую-то странную команду...
 Для того, чтобы получить ответ бота используйте следующие команды:
 /borders - получить информацию о границе между определенной страной и Россией.
-/requirements - получить информацию о требованиях страны.
-            """, reply_markup=markup)
+/requirements - получить информацию о требованиях страны.""", reply_markup=markup)
 
     else:
         # обработка текста
@@ -103,7 +102,9 @@ def respond():
                 state[chat_id] = []  # сбрасываем состояния
             except corona_restrictions.CountryNotFoundError:
                 # если сработало данное исключение, то значит введенной страны нет в базе
-                bot.sendMessage(chat_id, "Похоже, что такой страны нет в нашей базе или вы ввели её неправильно(\nВыберите страну из нашего списка.")
+                bot.sendMessage(chat_id, """
+Похоже, что такой страны нет в нашей базе или вы ввели её неправильно(
+Выберите страну из нашего списка.""")
 
         else:
             # если ввели что-то неожиданное
