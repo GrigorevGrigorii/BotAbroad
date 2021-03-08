@@ -1,42 +1,62 @@
 from flask import Flask, request
+from flask_sqlalchemy import SQLAlchemy
 import telegram
-from telebot import corona_restrictions
-from telebot.state import State
+import corona_restrictions
 import os
 
 
 bot_token = os.environ.get('TOKEN')
 bot = telegram.Bot(token=bot_token)
-state = State()  # здесь для каждого пользователя хранится спискок соятоний его бота
-# Возможные состояния:
-# choosing_region - ожидается ввод региона
-# choosing_страны - ожидается ввод страны
-# borders_command - происходит обработка команды /borders
-# requirements_command - происходит обработка команды /requirements
-# Состояние может отсутсвовать (бот в покое).
-# Возможно также комбинировать некоторые состояния.
 
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+db = SQLAlchemy(app)
+
+
+class State(db.Model):
+    """
+    Здесь для каждого пользователя хранится спискок соятоний его бота. Возможные состояния:
+    region_selection - ожидается ввод региона;
+    country_selection - ожидается ввод страны;
+    borders_command - происходит обработка команды /borders;
+    requirements_command - происходит обработка команды /requirements;
+    Состояние может отсутсвовать (бот в покое).
+    Возможно также комбинировать некоторые состояния.
+    Все состояная хранятся в виде строки. Несколько состояний разделены символом / (слэш).
+    Состоянию покоя соответствует пустая строка.
+    """
+    __tablename__ = "states"
+    _id = db.Column(db.Integer, primary_key=True)
+    chat_id = db.Column(db.Integer, unique=True, nullable=False)
+    state = db.Column(db.String(40), default='')
+    # Макисмальная длина состояния (включая возможные комбинации) не превышвает 38, поэтому здесь с запасом 40.
+    # При добавлении каких-то состояний пересчитать максимальную длину и возможно увеличить допустимую длину.
+
+    def __repr__(self):
+        return f"<State: chat_id={self.chat_id}, state={self.state}>"
 
 
 @app.route(f'/{bot_token}', methods=['POST'])
 def respond():
     """Обработка поступающих от Телеграма запросов"""
 
-    global state
-
     update = telegram.Update.de_json(request.get_json(force=True), bot)
 
     chat_id = update.message.chat.id
     text = update.message.text.encode('utf-8').decode()
+
+    chat_state = State.query.filter_by(chat_id=chat_id).first()
+    if not chat_state:
+        chat_state = State(chat_id=chat_id, state="")
+        db.session.add(chat_state)
 
     if text.startswith('/'):
         # обработка команд
 
         if text == '/start' or text == '/help':
             # обработка команд /start и /help
-            state[chat_id] = []  # сбрасываем состояния
+            chat_state.state = ''  # сбрасываем состояния
 
             markup = telegram.ReplyKeyboardRemove()
             bot.sendMessage(chat_id, """
@@ -51,12 +71,11 @@ def respond():
             markup = telegram.ReplyKeyboardMarkup(items)
             bot.sendMessage(chat_id, "Выберите регион:", reply_markup=markup)
 
-            state[chat_id] = ["choosing_region", f"{text[1:]}_command"]
+            chat_state.state = f"region_selection/{text[1:]}_command"
 
         else:
             # если ввели недопустимую команду
-
-            state[chat_id] = []  # сбрасываем состояния
+            chat_state.state = ''  # сбрасываем состояния
 
             markup = telegram.ReplyKeyboardRemove()
             bot.sendMessage(chat_id, """
@@ -68,7 +87,7 @@ def respond():
     else:
         # обработка текста
 
-        if "choosing_region" in state[chat_id]:
+        if "region_selection" in chat_state.state:
             # если ожидался ввод региона
             try:
                 items = []
@@ -77,12 +96,12 @@ def respond():
                 markup = telegram.ReplyKeyboardMarkup(items)
                 bot.sendMessage(chat_id, "Выберите страну:", reply_markup=markup)
 
-                state[chat_id] = ["choosing_country", state[chat_id][1]]
+                chat_state.state = chat_state.state.replace('region', 'country')
             except KeyError:
                 # если сработало данное исключение, то значит введенного региона нет в базе
                 bot.sendMessage(chat_id, "Вы ввели какой-то странный регион. Выберите из нашего списка.")
 
-        elif "choosing_country" in state[chat_id]:
+        elif "country_selection" in chat_state.state:
             # если ожидался ввод страны
             bot.sendMessage(chat_id, "Минуточку, мы ищем данные...")
             try:
@@ -90,16 +109,16 @@ def respond():
                     return (string[0 + i:length + i] for i in range(0, len(string), length))
 
                 markup = telegram.ReplyKeyboardRemove()
-                if "borders_command" in state[chat_id]:
+                if "borders_command" in chat_state.state:
                     # если пользователь хочет узнать информацию о границах страны
                     for chunk in chunk_string(corona_restrictions.get_info(text, borders=True), 4096):
                         bot.sendMessage(chat_id, chunk, reply_markup=markup)
-                elif "requirements_command" in state[chat_id]:
+                elif "requirements_command" in chat_state.state:
                     # если пользователь хочет узнать информацию о требованиях страны
                     for chunk in chunk_string(corona_restrictions.get_info(text, requirements=True), 4096):
                         bot.sendMessage(chat_id, chunk, reply_markup=markup)
 
-                state[chat_id] = []  # сбрасываем состояния
+                chat_state.state = ''  # сбрасываем состояния
             except corona_restrictions.CountryNotFoundError:
                 # если сработало данное исключение, то значит введенной страны нет в базе
                 bot.sendMessage(chat_id, """
@@ -108,13 +127,16 @@ def respond():
 
         else:
             # если ввели что-то неожиданное
-            bot.sendMessage(chat_id, "Я вас не понимаю. Введите /help, чтобы посмотреть доступные команды.")
+            markup = telegram.ReplyKeyboardRemove()
+            bot.sendMessage(chat_id, "Я вас не понимаю. Введите /help, чтобы посмотреть доступные команды.", reply_markup=markup)
 
+    db.session.commit()
     return 'ok'
 
 
 @app.route('/')
 def index():
+    """Просто для проверки активности сервера"""
     return '.'
 
 
