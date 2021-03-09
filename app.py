@@ -68,10 +68,10 @@ def respond():
 
         else:
             markup = telegram.ReplyKeyboardRemove()
-            bot.sendMessage(chat_id, "Я вас не понимаю. Введите /help, чтобы посмотреть доступные команды.",
+            bot.sendMessage(chat_id, "Бот принимает только текстовые сообщения. Введите /help, чтобы посмотреть доступные команды.",
                             reply_markup=markup)
 
-    if text.startswith('/'):
+    elif text.startswith('/'):
         # обработка команд
 
         if text == '/start' or text == '/help':
