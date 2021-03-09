@@ -15,24 +15,25 @@ def get_topic_href(country):
 
     for key, value in topics.items():
         if country in value:
-            topic_name = key
+            part_of_the_topic_name = key
             break
     else:
         raise CountryNotFoundError(country)
 
-    r = requests\
-        .get('https://www.mid.ru/ru/informacia-dla-rossijskih-i-inostrannyh-grazdan-v-svazi-s-koronavirusnoj-infekciej')
-    soup = BeautifulSoup(r.content, 'html.parser')
-    all_topics = soup.find_all('a', {'class': 'anons-title'})
+    page = 1
+    while True:
+        r = requests.get(f"https://www.mid.ru/ru/informacia-dla-rossijskih-i-inostrannyh-grazdan-v-svazi-s-koronavirusnoj-infekciej?p_p_id=101_INSTANCE_UUDFpNltySPE&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&_101_INSTANCE_UUDFpNltySPE_delta=20&_101_INSTANCE_UUDFpNltySPE_keywords=&_101_INSTANCE_UUDFpNltySPE_advancedSearch=false&_101_INSTANCE_UUDFpNltySPE_andOperator=true&p_r_p_564233524_resetCur=false&_101_INSTANCE_UUDFpNltySPE_cur={page}")
 
-    for topic in all_topics:
-        if topic_name in topic.text:
-            href = topic['href']
-            break
-    else:
-        raise TopicNotFoundError(topic_name)
+        if r.status_code != 200:
+            raise TopicNotFoundError(part_of_the_topic_name)
 
-    return href
+        soup = BeautifulSoup(r.content, 'html.parser')
+        all_topics = soup.find_all('a', {'class': 'anons-title'})
+        for topic in all_topics:
+            if part_of_the_topic_name in topic.text:
+                return topic['href']
+
+        page += 1
 
 
 def get_info(country, borders: bool = False, requirements: bool = False):
@@ -94,7 +95,7 @@ class CountryNotFoundError(Exception):
 
 
 class TopicNotFoundError(Exception):
-    """Исключение. Используется, когда статья на сайте МИД с данным именем отсутствует"""
+    """Исключение. Используется, когда статья на сайте МИД с данным ключевым фрагментом отсутствует"""
     def __init__(self, topic_name):
-        self.message = f"There is no topic with such name: {topic_name}"
+        self.message = f"There is no topic with such key part of the name: {topic_name}"
         super().__init__(self.message)
