@@ -10,12 +10,12 @@ def get_regions():
     return regions.keys()
 
 
-def get_topic_href(country):
+def get_article_href(country):
     """Функция для получения ссылки на страницу с информацией о данной стране"""
 
-    for key, value in topics.items():
+    for key, value in articles.items():
         if country in value:
-            part_of_the_topic_name = key
+            part_of_the_article_name = key
             break
     else:
         raise CountryNotFoundError(country)
@@ -25,13 +25,13 @@ def get_topic_href(country):
         r = requests.get(f"https://www.mid.ru/ru/informacia-dla-rossijskih-i-inostrannyh-grazdan-v-svazi-s-koronavirusnoj-infekciej?p_p_id=101_INSTANCE_UUDFpNltySPE&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&_101_INSTANCE_UUDFpNltySPE_delta=20&_101_INSTANCE_UUDFpNltySPE_keywords=&_101_INSTANCE_UUDFpNltySPE_advancedSearch=false&_101_INSTANCE_UUDFpNltySPE_andOperator=true&p_r_p_564233524_resetCur=false&_101_INSTANCE_UUDFpNltySPE_cur={page}")
 
         if r.status_code != 200:
-            raise TopicNotFoundError(part_of_the_topic_name)
+            raise ArticleNotFoundError(part_of_the_article_name)
 
         soup = BeautifulSoup(r.content, 'html.parser')
-        all_topics = soup.find_all('a', {'class': 'anons-title'})
-        for topic in all_topics:
-            if part_of_the_topic_name in topic.text:
-                return topic['href']
+        all_articles = soup.find_all('a', {'class': 'anons-title'})
+        for article in all_articles:
+            if part_of_the_article_name in article.text:
+                return article['href']
 
         page += 1
 
@@ -39,14 +39,14 @@ def get_topic_href(country):
 def get_info(country, borders: bool = False, requirements: bool = False):
     """Функция для получения информации о стране"""
 
-    topic_href = get_topic_href(country)
+    article_href = get_article_href(country)
     response = country + '\n\n'
 
-    r = requests.get(topic_href)
+    r = requests.get(article_href)
     soup = BeautifulSoup(r.content, 'html.parser')
 
-    rows_from_topic = soup.find_all('tr')[2:-2]
-    for row in rows_from_topic:
+    rows_from_article = soup.find_all('tr')[2:-2]
+    for row in rows_from_article:
         tds = row.find_all('td')
 
         if country in tds[1].text:
@@ -76,7 +76,7 @@ regions = {
 }
 
 # здесь хранятся ключевые части названий статей с ограничениями для разных групп стран
-topics = {
+articles = {
     'Северной и Южной Америки': regions['Северная и Южная Америка'],
     'Европы': regions['Европа'],
     'Азии и Океании': regions['Азия и Океания'],
@@ -94,8 +94,8 @@ class CountryNotFoundError(Exception):
         super().__init__(self.message)
 
 
-class TopicNotFoundError(Exception):
+class ArticleNotFoundError(Exception):
     """Исключение. Используется, когда статья на сайте МИД с данным ключевым фрагментом отсутствует"""
-    def __init__(self, topic_name):
-        self.message = f"There is no topic with such key part of the name: {topic_name}"
+    def __init__(self, article_name):
+        self.message = f"There is no article with such key part of the name: {article_name}"
         super().__init__(self.message)
