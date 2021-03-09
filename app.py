@@ -44,14 +44,34 @@ def respond():
     update = telegram.Update.de_json(request.get_json(force=True), bot)
 
     chat_id = update.message.chat.id
-    text = update.message.text.encode('utf-8').decode()
+    text = update.message.text
 
     chat_state = State.query.filter_by(chat_id=chat_id).first()
     if not chat_state:
         chat_state = State(chat_id=chat_id, state="")
         db.session.add(chat_state)
 
-    if text.startswith('/'):
+    if text is None:
+        # если ввели не текстовое сообщение
+
+        if "region_selection" in chat_state.state:
+            # если ожидался ввод региона
+            bot.sendMessage(chat_id, """
+Бот принимает только текстовые сообщения.
+Вы должны ввести регион. Выберите его из нашего списка.""")
+
+        elif "country_selection" in chat_state.state:
+            # если ожидался ввод страны
+            bot.sendMessage(chat_id, """
+Бот принимает только текстовые сообщения.
+Вы должны ввести страну. Выберите её из нашего списка.""")
+
+        else:
+            markup = telegram.ReplyKeyboardRemove()
+            bot.sendMessage(chat_id, "Бот принимает только текстовые сообщения. Введите /help, чтобы посмотреть доступные команды.",
+                            reply_markup=markup)
+
+    elif text.startswith('/'):
         # обработка команд
 
         if text == '/start' or text == '/help':
@@ -128,7 +148,8 @@ def respond():
         else:
             # если ввели что-то неожиданное
             markup = telegram.ReplyKeyboardRemove()
-            bot.sendMessage(chat_id, "Я вас не понимаю. Введите /help, чтобы посмотреть доступные команды.", reply_markup=markup)
+            bot.sendMessage(chat_id, "Я вас не понимаю. Введите /help, чтобы посмотреть доступные команды.",
+                            reply_markup=markup)
 
     db.session.commit()
     return 'ok'
