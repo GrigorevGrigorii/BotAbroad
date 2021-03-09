@@ -98,5 +98,3 @@ class TopicNotFoundError(Exception):
     def __init__(self, topic_name):
         self.message = f"There is no topic with such name: {topic_name}"
         super().__init__(self.message)
-
-
