@@ -37,6 +37,18 @@ class State(db.Model):
         return f"<State: chat_id={self.chat_id}, state={self.state}>"
 
 
+class User(db.Model):
+    """Здесь хранятся все пользователи, которые хоть раз обращались к боту"""
+    __tablename__ = "users"
+    _id = db.Column(db.Integer, primary_key=True)
+    user_telegram_id = db.Column(db.Integer, unique=True, nullable=False)
+    user_first_name = db.Column(db.String(40))
+    user_last_name = db.Column(db.String(40))
+
+    def __repr__(self):
+        return f"<User: user_first_name={self.user_first_name}, user_last_name={self.user_last_name}>"
+
+
 @app.route(f'/{bot_token}', methods=['POST'])
 def respond():
     """Обработка поступающих от Телеграма запросов"""
@@ -76,6 +88,14 @@ def respond():
 
         if text == '/start' or text == '/help':
             # обработка команд /start и /help
+
+            if text == '/start':
+                # заносим пользователя в таблицу если его там нет
+                user = update.message.from_user
+                if user and not User.query.filter_by(user_telegram_id=user.id).first():
+                    db.session.add(
+                        User(user_telegram_id=user.id, user_first_name=user.first_name, user_last_name=user.last_name))
+
             chat_state.state = ''  # сбрасываем состояния
 
             markup = telegram.ReplyKeyboardRemove()
