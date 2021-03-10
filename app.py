@@ -70,13 +70,13 @@ def respond():
             # если ожидался ввод региона
             bot.sendMessage(chat_id, """
 Бот принимает только текстовые сообщения.
-Вы должны ввести регион. Выберите его из нашего списка.""")
+Вы должны ввести регион. Выберите его из списка.""")
 
         elif "country_selection" in chat_state.state:
             # если ожидался ввод страны
             bot.sendMessage(chat_id, """
 Бот принимает только текстовые сообщения.
-Вы должны ввести страну. Выберите её из нашего списка.""")
+Вы должны ввести страну. Выберите её из списка.""")
 
         else:
             markup = telegram.ReplyKeyboardRemove()
@@ -139,11 +139,11 @@ def respond():
                 chat_state.state = chat_state.state.replace('region', 'country')
             except KeyError:
                 # если сработало данное исключение, то значит введенного региона нет в базе
-                bot.sendMessage(chat_id, "Вы ввели какой-то странный регион. Выберите из нашего списка.")
+                bot.sendMessage(chat_id, "Вы ввели какой-то странный регион. Выберите из списка.")
 
         elif "country_selection" in chat_state.state:
             # если ожидался ввод страны
-            bot.sendMessage(chat_id, "Минуточку, мы ищем данные...")
+            bot.sendMessage(chat_id, "Минуточку, бот ищет данные...")
             try:
                 def chunk_string(string, length):
                     return (string[0 + i:length + i] for i in range(0, len(string), length))
@@ -162,13 +162,13 @@ def respond():
             except corona_restrictions.CountryNotFoundError:
                 # если сработало данное исключение, то значит введенной страны нет в базе
                 bot.sendMessage(chat_id, """
-Похоже, что такой страны нет в нашей базе или вы ввели её неправильно(
-Выберите страну из нашего списка.""")
+Похоже, что такой страны нет в базе или вы ввели её неправильно(
+Выберите страну из списка.""")
 
         else:
             # если ввели что-то неожиданное
             markup = telegram.ReplyKeyboardRemove()
-            bot.sendMessage(chat_id, "Я вас не понимаю. Введите /help, чтобы посмотреть доступные команды.",
+            bot.sendMessage(chat_id, "Бот вас не понимает. Введите /help, чтобы посмотреть доступные команды.",
                             reply_markup=markup)
 
     db.session.commit()
