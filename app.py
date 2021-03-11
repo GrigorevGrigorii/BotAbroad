@@ -56,6 +56,10 @@ def respond():
 
     update = telegram.Update.de_json(request.get_json(force=True), bot)
 
+    if not update.message:
+        # если произошло действие, но это действие не отправка сообщения
+        return 'ok'
+
     chat_id = update.message.chat.id
     text = update.message.text
 
