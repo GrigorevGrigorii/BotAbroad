@@ -11,6 +11,7 @@ bot = telegram.Bot(token=bot_token)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
@@ -30,7 +31,7 @@ class State(db.Model):
     _id = db.Column(db.Integer, primary_key=True)
     chat_id = db.Column(db.Integer, unique=True, nullable=False)
     state = db.Column(db.String(40), default='')
-    # Макисмальная длина состояния (включая возможные комбинации) не превышвает 38, поэтому здесь с запасом 40.
+    # Максимальная длина состояния (включая возможные комбинации) не превышает 38, поэтому здесь с запасом 40.
     # При добавлении каких-то состояний пересчитать максимальную длину и возможно увеличить допустимую длину.
 
     def __repr__(self):
@@ -38,7 +39,7 @@ class State(db.Model):
 
 
 class User(db.Model):
-    """Здесь хранятся все пользователи, которые хоть раз обращались к боту"""
+    """Здесь хранятся все пользователи, которые хоть раз вводили /start (эта команда всегда вводится первой)"""
     __tablename__ = "users"
     _id = db.Column(db.Integer, primary_key=True)
     user_telegram_id = db.Column(db.Integer, unique=True, nullable=False)
