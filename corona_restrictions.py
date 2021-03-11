@@ -3,10 +3,14 @@ from bs4 import BeautifulSoup
 
 
 def get_countries_by_region(region):
+    """Функция для получения всех доступных стран из переданного региона"""
+
     return regions[region]
 
 
 def get_regions():
+    """Функция для получения всех доступных регионов"""
+
     return regions.keys()
 
 
