@@ -1,8 +1,10 @@
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 import telegram
-import corona_restrictions
 import os
+
+import corona_restrictions
+from secondary_functions import chunk_string
 
 
 bot_token = os.environ.get('TOKEN')
@@ -150,9 +152,6 @@ def respond():
             # если ожидался ввод страны
             bot.sendMessage(chat_id, "Минуточку, бот ищет данные...")
             try:
-                def chunk_string(string, length):
-                    return (string[0 + i:length + i] for i in range(0, len(string), length))
-
                 markup = telegram.ReplyKeyboardRemove()
                 if "borders_command" in chat_state.state:
                     # если пользователь хочет узнать информацию о границах страны
