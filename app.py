@@ -1,8 +1,10 @@
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 import telegram
-import corona_restrictions
 import os
+
+import corona_restrictions
+from secondary_functions import chunk_string
 
 
 bot_token = os.environ.get('TOKEN')
@@ -150,22 +152,6 @@ def respond():
             # если ожидался ввод страны
             bot.sendMessage(chat_id, "Минуточку, бот ищет данные...")
             try:
-                def chunk_string(string, length):
-                    """Возвращает string разбитую по части длины не больше length по словам"""
-                    if len(string) <= length:
-                        return [string]
-
-                    chunked_string = ['']
-                    for word in string.split(' '):
-                        if len(word) > length:
-                            raise AttributeError('Length should be more than the longest word!')
-
-                        if len(chunked_string[-1] + ' ' + word) <= length:
-                            chunked_string[-1] += (' ' + word) if chunked_string[-1] != '' else word
-                        else:
-                            chunked_string.append(word)
-                    return chunked_string
-
                 markup = telegram.ReplyKeyboardRemove()
                 if "borders_command" in chat_state.state:
                     # если пользователь хочет узнать информацию о границах страны
