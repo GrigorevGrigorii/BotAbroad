@@ -50,11 +50,18 @@ $ source venv/bin/activate
 - `secondary_functions.py`
     
     В данном фале находятся вспомогательные функции, которые нужны для других модулей.
+- `database.py`
+
+    В данном файле находится всё необходимое для базы данных.
+
+- `models.py`
+  
+    В данном файле находятся модели для базы данных.
 
 ### Замечания
-- В проекте используется база данных Heroku. Для того, чтобы использовать другую бд, нужно в `app.py` в строке
+- В проекте используется база данных Heroku. Для того, чтобы использовать другую бд, нужно в `database.py` в строке
     ```
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+    engine = create_engine(os.environ.get('DATABASE_URL'), convert_unicode=True)
     ```
     заменить `os.environ.get('DATABASE_URL')` на url вашей базы данных.
 

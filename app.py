@@ -1,5 +1,7 @@
 from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
+from database import db_session
+from models import State, User
+
 import telegram
 import os
 
@@ -10,46 +12,13 @@ from secondary_functions import chunk_string
 bot_token = os.environ.get('TOKEN')
 bot = telegram.Bot(token=bot_token)
 
-
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
 
-class State(db.Model):
-    """
-    Здесь для каждого пользователя хранится спискок соятоний его бота. Возможные состояния:
-    region_selection - ожидается ввод региона;
-    country_selection - ожидается ввод страны;
-    borders_command - происходит обработка команды /borders;
-    requirements_command - происходит обработка команды /requirements;
-    Состояние может отсутсвовать (бот в покое).
-    Возможно также комбинировать некоторые состояния.
-    Все состояная хранятся в виде строки. Несколько состояний разделены символом / (слэш).
-    Состоянию покоя соответствует пустая строка.
-    """
-    __tablename__ = "states"
-    _id = db.Column(db.Integer, primary_key=True)
-    chat_id = db.Column(db.Integer, unique=True, nullable=False)
-    state = db.Column(db.String(40), default='')
-    # Максимальная длина состояния (включая возможные комбинации) не превышает 38, поэтому здесь с запасом 40.
-    # При добавлении каких-то состояний пересчитать максимальную длину и возможно увеличить допустимую длину.
-
-    def __repr__(self):
-        return f"<State: chat_id={self.chat_id}, state={self.state}>"
-
-
-class User(db.Model):
-    """Здесь хранятся все пользователи, которые хоть раз вводили /start (эта команда всегда вводится первой)"""
-    __tablename__ = "users"
-    _id = db.Column(db.Integer, primary_key=True)
-    user_telegram_id = db.Column(db.Integer, unique=True, nullable=False)
-    user_first_name = db.Column(db.String(40))
-    user_last_name = db.Column(db.String(40))
-
-    def __repr__(self):
-        return f"<User: user_first_name={self.user_first_name}, user_last_name={self.user_last_name}>"
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """Удаление сессии в конце запроса или при отключении сервера"""
+    db_session.remove()
 
 
 @app.route(f'/{bot_token}', methods=['POST'])
@@ -65,10 +34,10 @@ def respond():
     chat_id = update.message.chat.id
     text = update.message.text
 
-    chat_state = State.query.filter_by(chat_id=chat_id).first()
+    chat_state = State.query.filter(State.chat_id == chat_id).first()
     if not chat_state:
         chat_state = State(chat_id=chat_id, state="")
-        db.session.add(chat_state)
+        db_session.add(chat_state)
 
     if text is None:
         # если ввели не текстовое сообщение
@@ -99,8 +68,8 @@ def respond():
             if text == '/start':
                 # заносим пользователя в таблицу если его там нет
                 user = update.message.from_user
-                if user and not User.query.filter_by(user_telegram_id=user.id).first():
-                    db.session.add(
+                if user and not User.query.filter(User.user_telegram_id == user.id).first():
+                    db_session.add(
                         User(user_telegram_id=user.id, user_first_name=user.first_name, user_last_name=user.last_name))
 
             chat_state.state = ''  # сбрасываем состояния
@@ -175,7 +144,7 @@ def respond():
             bot.sendMessage(chat_id, "Бот вас не понимает. Введите /help, чтобы посмотреть доступные команды.",
                             reply_markup=markup)
 
-    db.session.commit()
+    db_session.commit()
     return 'ok'
 
 
