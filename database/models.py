@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from database import Base
+from database.database import Base
 
 
 class State(Base):
@@ -25,17 +25,3 @@ class State(Base):
 
     def __repr__(self):
         return f"<State: chat_id={self.chat_id}, state={self.state}>"
-
-
-class User(Base):
-    """Здесь хранятся все пользователи, которые хоть раз вводили /start (эта команда всегда вводится первой)"""
-
-    __tablename__ = "users"
-
-    _id = Column(Integer, primary_key=True)
-    user_telegram_id = Column(Integer, unique=True, nullable=False)
-    user_first_name = Column(String(40))
-    user_last_name = Column(String(40))
-
-    def __repr__(self):
-        return f"<User: user_first_name={self.user_first_name}, user_last_name={self.user_last_name}>"
