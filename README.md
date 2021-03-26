@@ -27,7 +27,7 @@ $ pip3 install -r requirements.txt
 
 В корне проекта введите команду
 ```bash
-$ sh ./install_dependencies_linux.sh
+$ sh ./install_dependencies_linux_macos.sh
 ```
 
 - На Windows:
