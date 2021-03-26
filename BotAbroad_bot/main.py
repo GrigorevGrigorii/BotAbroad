@@ -1,7 +1,7 @@
 import os
 import telegram
-import corona_restrictions
-from secondary_functions import chunk_string
+from BotAbroad_bot import corona_restrictions
+from BotAbroad_bot.secondary_functions import chunk_string
 
 
 bot_token = os.environ.get('TOKEN')
