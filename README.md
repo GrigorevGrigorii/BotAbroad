@@ -32,7 +32,7 @@ $ sh ./install_dependencies_linux_macos.sh
 
 - На Windows:
 
-Запустите двойным щелчком правой кнопки мыши файл `install_dependencies_windows.bat`.
+Запустите двойным щелчком левой кнопки мыши файл `install_dependencies_windows.bat`.
 
 
 ### Краткое описание файлов
