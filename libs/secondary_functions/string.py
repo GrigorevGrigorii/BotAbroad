@@ -7,7 +7,7 @@ def chunk_string(string, length):
     chunked_string = ['']
     for word in string.split(' '):
         if len(word) > length:
-            raise AttributeError('Length should be more than the longest word!')
+            raise ValueError('Length should be more than the longest word!')
 
         if len(chunked_string[-1] + ' ' + word) <= length:
             chunked_string[-1] += (' ' + word) if chunked_string[-1] != '' else word

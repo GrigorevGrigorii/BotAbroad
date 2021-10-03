@@ -1,21 +1,14 @@
 from flask import Flask, request
 
-from database.database import db_session
-from database.models import State
+from database.lib.handler import Handler
 
-from BotAbroad_bot import main
+from libs.bot.bot_abroad import BotAbroad
 
 
 app = Flask(__name__)
 
 
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    """Удаление сессии в конце запроса или при отключении сервера"""
-    db_session.remove()
-
-
-@app.route(f'/{main.bot_token}', methods=['POST'])
+@app.route(f'/{BotAbroad.token}', methods=['POST'])
 def respond():
     """Обработка поступающих от Телеграма запросов"""
 
@@ -26,16 +19,12 @@ def respond():
         return 'ok'
 
     chat_id = update['message']['chat']['id']
-    text = update['message']['text'] if 'text' in update['message'] else None
+    text = update['message'].get('text')
 
-    chat_state = State.query.filter(State.chat_id == chat_id).first()
-    if not chat_state:
-        chat_state = State(chat_id=chat_id, state="")
-        db_session.add(chat_state)
+    with Handler() as handler:
+        bot = BotAbroad(handler, chat_id)
+        bot.message_processing(text)  # обработка сообщения
 
-    main.message_processing(chat_id, text, chat_state)  # обработка сообщения
-
-    db_session.commit()
     return 'ok'
 
 
