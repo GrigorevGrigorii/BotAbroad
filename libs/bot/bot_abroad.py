@@ -9,6 +9,7 @@ from libs.constants import (
     states as states_constants,
     commands as commands_constants,
     telegram as telegram_constants,
+    corona as corona_constants,
 )
 
 
@@ -129,13 +130,13 @@ class BotAbroad:
                 markup = telegram.ReplyKeyboardRemove()
                 if command == commands_constants.CommandsEnum.BORDERS:
                     # если пользователь хочет узнать информацию о границах страны
-                    for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_restrictions.CoronaInfoType.BORDERS),
+                    for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_constants.CoronaInfoType.BORDERS),
                                               telegram_constants.MAX_MESSAGE_LENGTH):
                         self._send_message(chunk, reply_markup=markup)
                         markup = None
                 elif command == commands_constants.CommandsEnum.REQUIREMENTS:
                     # если пользователь хочет узнать информацию о требованиях страны
-                    for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_restrictions.CoronaInfoType.REQUIREMENTS),
+                    for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_constants.CoronaInfoType.REQUIREMENTS),
                                               telegram_constants.MAX_MESSAGE_LENGTH):
                         self._send_message(chunk, reply_markup=markup)
                         markup = None

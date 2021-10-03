@@ -9,15 +9,6 @@ from libs.constants import corona as corona_constants
 logger = logging.getLogger(__name__)
 
 
-class CoronaInfoType:
-    BORDERS = 'borders'
-    REQUIREMENTS = 'requirements'
-
-    @classmethod
-    def values(cls):
-        return [attr_value for attr_key, attr_value in cls.__dict__.items() if not attr_key.startswith('__')]
-
-
 def get_countries_by_region(region):
     """Функция для получения всех доступных стран из переданного региона"""
 
@@ -61,7 +52,7 @@ def _get_article_href(country):
 
 
 def _get_info_and_date(country, info_type):
-    if info_type not in CoronaInfoType.values():
+    if info_type not in corona_constants.CoronaInfoType.values():
         raise corona_exceptions.UnknownCoronaInfoType(info_type)
 
     article_href = _get_article_href(country)
@@ -74,14 +65,14 @@ def _get_info_and_date(country, info_type):
         tds = row.find_all('td')
 
         if country in tds[1].text:
-            if info_type == CoronaInfoType.BORDERS:
+            if info_type == corona_constants.CoronaInfoType.BORDERS:
                 info = tds[2].text.strip('\n')
-            elif info_type == CoronaInfoType.REQUIREMENTS:
+            elif info_type == corona_constants.CoronaInfoType.REQUIREMENTS:
                 info = tds[3].text.strip('\n')
             else:
                 raise corona_exceptions.UnknownCoronaInfoType(info_type)
 
-            date_of_relevance = soup.find('u').text
+            date_of_relevance = soup.find('p', {'style': 'text-align: right;'}).text
             break
     else:
         raise corona_exceptions.CountryInfoNotFoundError
@@ -91,7 +82,7 @@ def _get_info_and_date(country, info_type):
 
 def get_full_info(country, info_type):
     """Функция для получения информации о стране"""
-    if info_type not in CoronaInfoType.values():
+    if info_type not in corona_constants.CoronaInfoType.values():
         raise corona_exceptions.UnknownCoronaInfoType(info_type)
 
     logger.info('Getting {} info about {}'.format(info_type, country))
