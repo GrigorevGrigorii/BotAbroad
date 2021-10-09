@@ -51,6 +51,16 @@ def _get_article_href(country):
         page += 1
 
 
+def _get_date_of_relevance(soup):
+    all_suitable_fragments = soup.find_all('p', {'style': 'text-align: right;'})
+    for fragment in all_suitable_fragments:
+        text = fragment.text
+        if text.startswith('По состоянию на'):
+            return text
+    logger.warning('Can not find date_of_relevance')
+    return None
+
+
 def _get_info_and_date(country, info_type):
     if info_type not in corona_constants.CoronaInfoType.values():
         raise corona_exceptions.UnknownCoronaInfoType(info_type)
@@ -72,7 +82,7 @@ def _get_info_and_date(country, info_type):
             else:
                 raise corona_exceptions.UnknownCoronaInfoType(info_type)
 
-            date_of_relevance = soup.find('p', {'style': 'text-align: right;'}).text
+            date_of_relevance = _get_date_of_relevance(soup)
             break
     else:
         raise corona_exceptions.CountryInfoNotFoundError
