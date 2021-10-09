@@ -33,6 +33,7 @@ class BotAbroad:
 
         self.handler.create_chat_id_to_command_and_state_if_not_exists(self.chat_id)
 
+        self._send_typing_action()
         if text is None:
             # если ввели не текстовое сообщение
             self._process_non_text_message()
@@ -46,7 +47,10 @@ class BotAbroad:
             self._process_text(text)
 
     def _send_message(self, message_text, reply_markup=None):
-        self.__class__.bot_client.sendMessage(self.chat_id, message_text, reply_markup=reply_markup)
+        self.__class__.bot_client.send_message(self.chat_id, message_text, reply_markup=reply_markup)
+
+    def _send_typing_action(self):
+        self.__class__.bot_client.send_chat_action(self.chat_id, telegram.ChatAction.TYPING)
 
     def _get_command_and_state(self):
         return self.handler.get_command_and_state(self.chat_id)
@@ -126,6 +130,7 @@ class BotAbroad:
         elif state == states_constants.StatesEnum.COUNTRY_SELECTION:
             # если ожидался ввод страны
             self._send_message('Минуточку, бот ищет данные...')
+            self._send_typing_action()
             try:
                 markup = telegram.ReplyKeyboardRemove()
                 if command == commands_constants.CommandsEnum.BORDERS:
