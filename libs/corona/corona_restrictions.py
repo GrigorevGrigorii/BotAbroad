@@ -4,6 +4,7 @@ import logging
 
 from libs.corona import exceptions as corona_exceptions
 from libs.constants import corona as corona_constants
+from libs.secondary_functions.string import filter_html_tags
 
 
 logger = logging.getLogger(__name__)
@@ -58,12 +59,23 @@ def _get_date_of_relevance(soup):
         if text.startswith('По состоянию на'):
             return text
     logger.warning('Can not find date_of_relevance')
-    return None
+    return 'По состоянию на -'
 
 
-def _get_info_and_date(country, info_type):
+def beautify_info(info):
+    return filter_html_tags(info.strip('\n'), tags_to_filter=['p', 'td'])
+
+
+def beautify_date_of_relevance(date_of_relevance):
+    return f'<i>{date_of_relevance}</i>'
+
+
+def get_full_info(country, info_type):
+    """Функция для получения информации о стране"""
     if info_type not in corona_constants.CoronaInfoType.values():
         raise corona_exceptions.UnknownCoronaInfoType(info_type)
+
+    logger.info('Getting {} info about {}'.format(info_type, country))
 
     article_href = _get_article_href(country)
 
@@ -76,26 +88,15 @@ def _get_info_and_date(country, info_type):
 
         if country in tds[1].text:
             if info_type == corona_constants.CoronaInfoType.BORDERS:
-                info = tds[2].text.strip('\n')
+                info = beautify_info(str(tds[2]))
             elif info_type == corona_constants.CoronaInfoType.REQUIREMENTS:
-                info = tds[3].text.strip('\n')
+                info = beautify_info(str(tds[3]))
             else:
                 raise corona_exceptions.UnknownCoronaInfoType(info_type)
 
-            date_of_relevance = _get_date_of_relevance(soup)
+            date_of_relevance = beautify_date_of_relevance(_get_date_of_relevance(soup))
             break
     else:
         raise corona_exceptions.CountryInfoNotFoundError
 
-    return info, date_of_relevance
-
-
-def get_full_info(country, info_type):
-    """Функция для получения информации о стране"""
-    if info_type not in corona_constants.CoronaInfoType.values():
-        raise corona_exceptions.UnknownCoronaInfoType(info_type)
-
-    logger.info('Getting {} info about {}'.format(info_type, country))
-    info, date = _get_info_and_date(country, info_type)
-
-    return '\n\n'.join((country, info, date))
+    return '\n'.join((country, info, date_of_relevance))

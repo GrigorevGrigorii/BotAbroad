@@ -1,6 +1,7 @@
 import os
 import telegram
 import logging
+from telegram.utils.helpers import DEFAULT_NONE
 
 from libs.corona import corona_restrictions
 from libs.corona import exceptions as corona_exceptions
@@ -9,8 +10,8 @@ from libs.constants import (
     states as states_constants,
     commands as commands_constants,
     telegram as telegram_constants,
-    corona as corona_constants,
 )
+from database.models.chat_id_to_command_and_state import COMMAND_TO_CORONA_INFO_TYPE
 
 
 logger = logging.getLogger(__name__)
@@ -46,8 +47,8 @@ class BotAbroad:
             # обработка текста
             self._process_text(text)
 
-    def _send_message(self, message_text, reply_markup=None):
-        self.__class__.bot_client.send_message(self.chat_id, message_text, reply_markup=reply_markup)
+    def _send_message(self, message_text, reply_markup=None, parse_mode=DEFAULT_NONE):
+        self.__class__.bot_client.send_message(self.chat_id, message_text, reply_markup=reply_markup, parse_mode=parse_mode)
 
     def _send_typing_action(self):
         self.__class__.bot_client.send_chat_action(self.chat_id, telegram.ChatAction.TYPING)
@@ -133,21 +134,10 @@ class BotAbroad:
             self._send_typing_action()
             try:
                 markup = telegram.ReplyKeyboardRemove()
-                if command == commands_constants.CommandsEnum.BORDERS:
-                    # если пользователь хочет узнать информацию о границах страны
-                    for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_constants.CoronaInfoType.BORDERS),
-                                              telegram_constants.MAX_MESSAGE_LENGTH):
-                        self._send_message(chunk, reply_markup=markup)
-                        markup = None
-                elif command == commands_constants.CommandsEnum.REQUIREMENTS:
-                    # если пользователь хочет узнать информацию о требованиях страны
-                    for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_constants.CoronaInfoType.REQUIREMENTS),
-                                              telegram_constants.MAX_MESSAGE_LENGTH):
-                        self._send_message(chunk, reply_markup=markup)
-                        markup = None
-                else:
-                    raise Exception('something went wrong')  # в базе оказалась недопустимая команда
-
+                corona_info_type = COMMAND_TO_CORONA_INFO_TYPE[command]
+                for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_info_type), telegram_constants.MAX_MESSAGE_LENGTH):
+                    self._send_message(chunk, reply_markup=markup, parse_mode=telegram.ParseMode.HTML)
+                    markup = None
                 self.handler.reset_command_and_state(self.chat_id)
             except corona_exceptions.CountryNotFoundError:
                 # если сработало данное исключение, то значит введенной страны нет в базе
