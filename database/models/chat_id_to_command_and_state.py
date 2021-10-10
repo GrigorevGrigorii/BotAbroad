@@ -3,6 +3,13 @@ from database.__main__ import Base
 
 from libs.constants.states import StatesEnum
 from libs.constants.commands import CommandsEnum
+from libs.constants.corona import CoronaInfoType
+
+
+COMMAND_TO_CORONA_INFO_TYPE = {
+    CommandsEnum.BORDERS: CoronaInfoType.BORDERS,
+    CommandsEnum.REQUIREMENTS: CoronaInfoType.REQUIREMENTS,
+}
 
 
 class ChatIDToCommandAndState(Base):
