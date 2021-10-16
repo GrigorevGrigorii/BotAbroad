@@ -18,21 +18,21 @@ logger = logging.getLogger(__name__)
 
 
 class BotAbroad:
-    token = os.environ.get('TOKEN')
-    bot_client = telegram.Bot(token=token)
+    bot_client = telegram.Bot(token=os.environ.get('TOKEN'))
 
-    def __init__(self, handler, chat_id):
+    def __init__(self, db_handler, chat_id, user=None):
         logger.info('Init BotAbroad')
 
-        self.handler = handler
+        self.db_handler = db_handler
         self.chat_id = chat_id
+
+        self.db_handler.create_chat_id_to_command_and_state_if_not_exists(self.chat_id)
+        self.db_handler.update_user_info(chat_id, user)
 
     def message_processing(self, text):
         """Определение типа сообщения и перенаправление на дальнейшую обработку"""
 
         logger.info("Process message '{}' for chat_id={}".format(text, self.chat_id))
-
-        self.handler.create_chat_id_to_command_and_state_if_not_exists(self.chat_id)
 
         self._send_typing_action()
         if text is None:
@@ -54,7 +54,7 @@ class BotAbroad:
         self.__class__.bot_client.send_chat_action(self.chat_id, telegram.ChatAction.TYPING)
 
     def _get_command_and_state(self):
-        return self.handler.get_command_and_state(self.chat_id)
+        return self.db_handler.get_command_and_state(self.chat_id)
 
     def _process_non_text_message(self):
         """Обработка не текстового сообщения"""
@@ -87,7 +87,7 @@ class BotAbroad:
                                           '/requirements - получить информацию о требованиях страны.')),
                                reply_markup=markup)
 
-            self.handler.reset_command_and_state(self.chat_id)
+            self.db_handler.reset_command_and_state(self.chat_id)
 
         elif command in (commands_constants.CommandsEnum.BORDERS, commands_constants.CommandsEnum.REQUIREMENTS):
             # обработка команд commands_constants.CommandsEnum.BORDERS и commands_constants.CommandsEnum.REQUIREMENTS
@@ -97,7 +97,7 @@ class BotAbroad:
             markup = telegram.ReplyKeyboardMarkup(items)
             self._send_message('Выберите регион:', reply_markup=markup)
 
-            self.handler.set_command_and_state(self.chat_id, command, states_constants.StatesEnum.REGION_SELECTION)
+            self.db_handler.set_command_and_state(self.chat_id, command, states_constants.StatesEnum.REGION_SELECTION)
 
         else:
             # если ввели недопустимую команду
@@ -108,7 +108,7 @@ class BotAbroad:
                                           f'{commands_constants.CommandsEnum.REQUIREMENTS} - получить информацию о требованиях страны.')),
                                reply_markup=markup)
 
-            self.handler.reset_command_and_state(self.chat_id)
+            self.db_handler.reset_command_and_state(self.chat_id)
 
     def _process_text(self, text):
         """Обработка введённого текста"""
@@ -123,7 +123,7 @@ class BotAbroad:
                 markup = telegram.ReplyKeyboardMarkup(items)
                 self._send_message('Выберите страну:', reply_markup=markup)
 
-                self.handler.set_state(self.chat_id, states_constants.StatesEnum.COUNTRY_SELECTION)
+                self.db_handler.set_state(self.chat_id, states_constants.StatesEnum.COUNTRY_SELECTION)
             except corona_exceptions.RegionNotFoundError:
                 # если сработало данное исключение, то значит введенного региона нет в базе
                 self._send_message('Вы ввели какой-то странный регион. Выберите из списка.')
@@ -138,7 +138,7 @@ class BotAbroad:
                 for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_info_type), telegram_constants.MAX_MESSAGE_LENGTH):
                     self._send_message(chunk, reply_markup=markup, parse_mode=telegram.ParseMode.HTML)
                     markup = None
-                self.handler.reset_command_and_state(self.chat_id)
+                self.db_handler.reset_command_and_state(self.chat_id)
             except corona_exceptions.CountryNotFoundError:
                 # если сработало данное исключение, то значит введенной страны нет в базе
                 self._send_message('\n'.join(('Похоже, что такой страны нет в базе или вы ввели её неправильно(',
@@ -150,4 +150,11 @@ class BotAbroad:
             self._send_message('Бот вас не понимает. Введите /help, чтобы посмотреть доступные команды.',
                                reply_markup=markup)
 
-            self.handler.reset_command_and_state(self.chat_id)
+            self.db_handler.reset_command_and_state(self.chat_id)
+
+
+def get_bot_abroad(handler, update):
+    chat_id = update['message']['chat']['id']
+    user = update['message'].get('from')
+
+    return BotAbroad(handler, chat_id, user)

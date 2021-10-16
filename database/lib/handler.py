@@ -1,10 +1,12 @@
 import logging
 import functools
+from datetime import datetime
 
 from sqlalchemy.orm import sessionmaker, scoped_session
 from database.__main__ import engine, Base
 
 import database.models.chat_id_to_command_and_state as chat_id_to_command_and_state_model
+import database.models.users as users_model
 import database.exceptions.exceptions as database_exceptions
 from libs.constants.states import StatesEnum
 from libs.constants.commands import CommandsEnum
@@ -76,3 +78,28 @@ class Handler:
 
         command_and_state_row.command = command
         command_and_state_row.state = state
+
+    def get_user(self, chat_id, user_id):
+        filter_condition = (users_model.User.chat_id == chat_id and users_model.User.user_id == user_id)
+        return users_model.User.query.filter(filter_condition).first()
+
+    @with_session_commit
+    def update_user_info(self, chat_id, user_from_message):
+        if not user_from_message:
+            logger.info('There is no user from chat with id={}'.format(chat_id))
+            return
+
+        user = self.get_user(chat_id, user_from_message['id'])
+        if user:
+            user.is_bot = user_from_message['is_bot']
+            user.first_name = user_from_message['first_name']
+            user.last_name = user_from_message['last_name']
+            user.last_appeal_datetime = datetime.now()
+        else:
+            user = users_model.User(
+                chat_id=chat_id,
+                user_id=user_from_message['id'],
+                first_name=user_from_message['first_name'],
+                last_name=user_from_message['last_name'],
+            )
+            self.db_session.add(user)

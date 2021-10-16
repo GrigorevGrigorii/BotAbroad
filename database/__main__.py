@@ -9,4 +9,5 @@ Base = declarative_base()
 
 def init_db():
     from database.models import chat_id_to_command_and_state
+    from database.models import users
     Base.metadata.create_all(bind=engine)
