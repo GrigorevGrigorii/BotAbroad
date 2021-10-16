@@ -130,14 +130,12 @@ class BotAbroad:
 
         elif state == states_constants.StatesEnum.COUNTRY_SELECTION:
             # если ожидался ввод страны
-            self._send_message('Минуточку, бот ищет данные...')
+            self._send_message('Минуточку, бот ищет данные...', reply_markup=telegram.ReplyKeyboardRemove())
             self._send_typing_action()
             try:
-                markup = telegram.ReplyKeyboardRemove()
                 corona_info_type = COMMAND_TO_CORONA_INFO_TYPE[command]
                 for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_info_type), telegram_constants.MAX_MESSAGE_LENGTH):
-                    self._send_message(chunk, reply_markup=markup, parse_mode=telegram.ParseMode.HTML)
-                    markup = None
+                    self._send_message(chunk, parse_mode=telegram.ParseMode.HTML)
                 self.db_handler.reset_command_and_state(self.chat_id)
             except corona_exceptions.CountryNotFoundError:
                 # если сработало данное исключение, то значит введенной страны нет в базе
