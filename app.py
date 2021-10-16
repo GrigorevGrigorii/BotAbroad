@@ -1,14 +1,14 @@
+import os
 from flask import Flask, request
 
 from database.lib.handler import Handler
-
-from libs.bot.bot_abroad import BotAbroad
+from libs.bot.bot_abroad import get_bot_abroad
 
 
 app = Flask(__name__)
 
 
-@app.route(f'/{BotAbroad.token}', methods=['POST'])
+@app.route(f"/{os.environ.get('TOKEN')}", methods=['POST'])
 def respond():
     """Обработка поступающих от Телеграма запросов"""
 
@@ -18,12 +18,9 @@ def respond():
         # если произошло действие, но это действие не отправка сообщения
         return 'ok'
 
-    chat_id = update['message']['chat']['id']
-    text = update['message'].get('text')
-
     with Handler() as handler:
-        bot = BotAbroad(handler, chat_id)
-        bot.message_processing(text)  # обработка сообщения
+        bot = get_bot_abroad(handler, update)
+        bot.message_processing(update['message'].get('text'))  # обработка сообщения
 
     return 'ok'
 
