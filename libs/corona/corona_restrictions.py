@@ -88,9 +88,9 @@ def get_full_info(country, info_type):
 
         if country in tds[1].text:
             if info_type == corona_constants.CoronaInfoType.BORDERS:
-                info = beautify_info(str(tds[2]))
+                info = tds[2].text.strip('\n')
             elif info_type == corona_constants.CoronaInfoType.REQUIREMENTS:
-                info = beautify_info(str(tds[3]))
+                info = tds[3].text.strip('\n')
             else:
                 raise corona_exceptions.UnknownCoronaInfoType(info_type)
 
@@ -99,4 +99,4 @@ def get_full_info(country, info_type):
     else:
         raise corona_exceptions.CountryInfoNotFoundError
 
-    return '\n'.join((country, info, date_of_relevance))
+    return '\n\n'.join((country, info, date_of_relevance))
