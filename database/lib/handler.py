@@ -7,9 +7,11 @@ from database.__main__ import engine, Base
 
 import database.models.chat_id_to_command_and_state as chat_id_to_command_and_state_model
 import database.models.users as users_model
+import database.models.corona_infos as corona_infos_model
 import database.exceptions.exceptions as database_exceptions
 from libs.constants.states import StatesEnum
 from libs.constants.commands import CommandsEnum
+from libs.constants.corona import CoronaInfoType
 
 
 logger = logging.getLogger(__name__)
@@ -24,9 +26,9 @@ def with_session_commit(func):
     return wrapper
 
 
-class Handler:
+class DBHandler:
     def __init__(self):
-        logger.info('Init Handler')
+        logger.info('Init DBHandler')
 
         self.db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
         Base.query = self.db_session.query_property()
@@ -103,3 +105,27 @@ class Handler:
                 last_name=user_from_message['last_name'],
             )
             self.db_session.add(user)
+
+    def get_corona_info(self, region, country):
+        filter_condition = (corona_infos_model.CoronaInfos.region == region and corona_infos_model.CoronaInfos.country == country)
+        return corona_infos_model.CoronaInfos.query.filter(filter_condition).first()
+
+    @with_session_commit
+    def update_corona_info_row(self, region, country, border_info, requirement_info):
+        corona_info_row = self.get_corona_info(region, country)
+        if corona_info_row:
+            corona_info_row.border_info = border_info
+            corona_info_row.requirement_info = requirement_info
+        else:
+            corona_info_row = corona_infos_model.CoronaInfos(
+                region=region,
+                country=country,
+                border_info=border_info,
+                requirement_info=requirement_info,
+            )
+            self.db_session.add(corona_info_row)
+
+    def upload_corona_infos(self, corona_infos):
+        for region, corona_infos_for_countries in corona_infos.items():
+            for country, corona_infos in corona_infos_for_countries.items():
+                self.update_corona_info_row(region, country, corona_infos[CoronaInfoType.BORDERS], corona_infos[CoronaInfoType.REQUIREMENTS])

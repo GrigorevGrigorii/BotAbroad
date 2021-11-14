@@ -17,8 +17,3 @@ def chunk_string(string, length):
         else:
             chunked_string.append(word)
     return chunked_string
-
-
-def filter_html_tags(string, tags_to_filter):
-    template = '|'.join(r'(</?{}.*?>)'.format(tag) for tag in tags_to_filter)
-    return re.sub(template, '', string)

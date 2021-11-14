@@ -1,7 +1,6 @@
 import os
 import telegram
 import logging
-from telegram.utils.helpers import DEFAULT_NONE
 
 from libs.corona import corona_restrictions
 from libs.corona import exceptions as corona_exceptions
@@ -47,8 +46,8 @@ class BotAbroad:
             # обработка текста
             self._process_text(text)
 
-    def _send_message(self, message_text, reply_markup=None, parse_mode=DEFAULT_NONE):
-        self.__class__.bot_client.send_message(self.chat_id, message_text, reply_markup=reply_markup, parse_mode=parse_mode)
+    def _send_message(self, message_text, reply_markup=None):
+        self.__class__.bot_client.send_message(self.chat_id, message_text, reply_markup=reply_markup)
 
     def _send_typing_action(self):
         self.__class__.bot_client.send_chat_action(self.chat_id, telegram.ChatAction.TYPING)
@@ -135,7 +134,7 @@ class BotAbroad:
             try:
                 corona_info_type = COMMAND_TO_CORONA_INFO_TYPE[command]
                 for chunk in chunk_string(corona_restrictions.get_full_info(text, info_type=corona_info_type), telegram_constants.MAX_MESSAGE_LENGTH):
-                    self._send_message(chunk, parse_mode=telegram.ParseMode.HTML)
+                    self._send_message(chunk)
                 self.db_handler.reset_command_and_state(self.chat_id)
             except corona_exceptions.CountryNotFoundError:
                 # если сработало данное исключение, то значит введенной страны нет в базе
@@ -151,8 +150,8 @@ class BotAbroad:
             self.db_handler.reset_command_and_state(self.chat_id)
 
 
-def get_bot_abroad(handler, update):
-    chat_id = update['message']['chat']['id']
-    user = update['message'].get('from')
+def get_bot_abroad(handler, telegram_update):
+    chat_id = telegram_update['message']['chat']['id']
+    user = telegram_update['message'].get('from')
 
     return BotAbroad(handler, chat_id, user)
