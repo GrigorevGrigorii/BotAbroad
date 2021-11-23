@@ -9,6 +9,7 @@ from libs.constants import (
     states as states_constants,
     commands as commands_constants,
     telegram as telegram_constants,
+    subscription as subscription_constants,
 )
 from database.models.chats import COMMAND_TO_CORONA_INFO_TYPE
 
@@ -49,9 +50,9 @@ class BotAbroad:
     def send_info_about_subscriptions(self, contries):
         """Отправка стран из подписок, по которым изменились требования"""
 
-        self._send_message('\n'.join('Привет!',
+        self._send_message('\n'.join(('Привет!',
                                      'Изменилась информация по следующим странам:',
-                                     ', '.join(contries)))
+                                     ', '.join(contries))))
 
     def _send_message(self, message_text, reply_markup=None):
         self.__class__.bot_client.send_message(self.chat_id, message_text, reply_markup=reply_markup)
@@ -61,6 +62,13 @@ class BotAbroad:
 
     def _get_command_and_state(self):
         return self.db_handler.get_command_and_state(self.chat_id)
+
+    def _send_regions():
+        items = []
+        for region in corona_restrictions.get_regions():
+            items.append([telegram.KeyboardButton(region)])
+        markup = telegram.ReplyKeyboardMarkup(items)
+        self._send_message('Выберите регион:', reply_markup=markup)
 
     def _process_non_text_message(self):
         """Обработка не текстового сообщения"""
@@ -97,13 +105,13 @@ class BotAbroad:
 
         elif command in (commands_constants.CommandsEnum.BORDERS, commands_constants.CommandsEnum.REQUIREMENTS):
             # обработка команд commands_constants.CommandsEnum.BORDERS и commands_constants.CommandsEnum.REQUIREMENTS
-            items = []
-            for region in corona_restrictions.get_regions():
-                items.append([telegram.KeyboardButton(region)])
-            markup = telegram.ReplyKeyboardMarkup(items)
-            self._send_message('Выберите регион:', reply_markup=markup)
-
+            self._send_regions()
             self.db_handler.set_command_and_state(self.chat_id, command, states_constants.StatesEnum.REGION_SELECTION)
+
+        elif command == commands_constants.CommandsEnum.SUBSCRIPTIONS:
+            markup = telegram.ReplyKeyboardMarkup(subscription_constants.ACTION_TO_DISPLAY_NAME.values())
+            self._send_message('Выберите подходящее действие:', reply_markup=markup)
+            self.db_handler.set_command(self.chat_id, commands_constants.CommandsEnum.SUBSCRIPTIONS)
 
         else:
             # если ввели недопустимую команду
@@ -111,7 +119,8 @@ class BotAbroad:
             self._send_message('\n'.join(('Вы используете какую-то странную команду...',
                                           'Для того, чтобы получить ответ бота используйте следующие команды:',
                                           f'{commands_constants.CommandsEnum.BORDERS} - получить информацию о границе между определенной страной и Россией.',
-                                          f'{commands_constants.CommandsEnum.REQUIREMENTS} - получить информацию о требованиях страны.')),
+                                          f'{commands_constants.CommandsEnum.REQUIREMENTS} - получить информацию о требованиях страны.',
+                                          f'{commands_constants.CommandsEnum.SUBSCRIPTIONS} - управление подписками.')),
                                reply_markup=markup)
 
             self.db_handler.reset_command_and_state(self.chat_id)
@@ -120,7 +129,18 @@ class BotAbroad:
         """Обработка введённого текста"""
 
         command, state = self._get_command_and_state()
-        if state == states_constants.StatesEnum.REGION_SELECTION:
+        if command == commands_constants.CommandsEnum.SUBSCRIPTIONS and not state:
+            if text in subscription_constants.ACTION_TO_DISPLAY_NAME.values():
+                self._send_regions()
+                # TODO: подумать, как сохранить это действие (мб как subcommand)
+                self.db_handler.set_state(self.chat_id, states_constants.StatesEnum.REGION_SELECTION)
+
+            else:
+                self._send_message('\n'.join(('Вы ввели какое-то странное действие...',
+                                              'Выберите подходящее из списка:')),
+                                   reply_markup=markup)
+
+        elif state == states_constants.StatesEnum.REGION_SELECTION:
             # если ожидался ввод региона
             try:
                 items = []
@@ -128,7 +148,6 @@ class BotAbroad:
                     items.append([telegram.KeyboardButton(country)])
                 markup = telegram.ReplyKeyboardMarkup(items)
                 self._send_message('Выберите страну:', reply_markup=markup)
-
                 self.db_handler.set_state(self.chat_id, states_constants.StatesEnum.COUNTRY_SELECTION)
             except corona_exceptions.RegionNotFoundError:
                 # если сработало данное исключение, то значит введенного региона нет в базе

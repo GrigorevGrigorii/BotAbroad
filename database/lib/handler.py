@@ -73,6 +73,14 @@ class DBHandler:
         chat.state = state
 
     @with_session_commit
+    def set_command(self, chat_id, command):
+        chat = self.get_chat(chat_id)
+        if not chat:
+            raise database_exceptions.ItemNotFountError('There is no chat with chat_id={}'.format(chat_id))
+
+        chat.command = command
+
+    @with_session_commit
     def set_command_and_state(self, chat_id, command, state):
         chat = self.get_chat(chat_id)
         if not chat:

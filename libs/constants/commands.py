@@ -4,3 +4,4 @@ class CommandsEnum:
     HELP = '/help'
     BORDERS = '/borders'
     REQUIREMENTS = '/requirements'
+    SUBSCRIPTIONS = '/subscriptions'
