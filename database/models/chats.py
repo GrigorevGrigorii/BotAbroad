@@ -12,16 +12,17 @@ COMMAND_TO_CORONA_INFO_TYPE = {
 }
 
 
-class ChatIDToCommandAndState(Base):
+class Chat(Base):
     """
-    Сопоставление ID чата -> текущая команда, состояние бота
+    Чаты (бот привзяан к чату, а не к юзеру, так как бот может быть добавлен к групповой чат)
     """
 
-    __tablename__ = "chat_id_to_command_and_state"
+    __tablename__ = "chats"
 
     chat_id = Column(Integer, primary_key=True)
     command = Column(Text, default=CommandsEnum.NOTHING)
     state = Column(Text, default=StatesEnum.NOTHING)
+    subsciptions = Column(, default=[])  # TODO: make list
 
     def __repr__(self):
-        return f"<ChatIDToCommandAndState: chat_id={self.chat_id}, command={self.command}, state={self.state}>"
+        return f"<Chat: chat_id={self.chat_id}, command={self.command}, state={self.state}>"

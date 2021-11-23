@@ -10,7 +10,7 @@ from libs.constants import (
     commands as commands_constants,
     telegram as telegram_constants,
 )
-from database.models.chat_id_to_command_and_state import COMMAND_TO_CORONA_INFO_TYPE
+from database.models.chats import COMMAND_TO_CORONA_INFO_TYPE
 
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class BotAbroad:
         self.db_handler = db_handler
         self.chat_id = chat_id
 
-        self.db_handler.create_chat_id_to_command_and_state_if_not_exists(self.chat_id)
+        self.db_handler.create_chat_if_not_exists(self.chat_id)
         self.db_handler.update_user_info(chat_id, user)
 
     def message_processing(self, text):
@@ -45,6 +45,13 @@ class BotAbroad:
         else:
             # обработка текста
             self._process_text(text)
+
+    def send_info_about_subscriptions(self, contries):
+        """Отправка стран из подписок, по которым изменились требования"""
+
+        self._send_message('\n'.join('Привет!',
+                                     'Изменилась информация по следующим странам:',
+                                     ', '.join(contries)))
 
     def _send_message(self, message_text, reply_markup=None):
         self.__class__.bot_client.send_message(self.chat_id, message_text, reply_markup=reply_markup)

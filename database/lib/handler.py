@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import sessionmaker, scoped_session
 from database.__main__ import engine, Base
 
-import database.models.chat_id_to_command_and_state as chat_id_to_command_and_state_model
+import database.models.chats as chats_model
 import database.models.users as users_model
 import database.models.corona_infos as corona_infos_model
 import database.exceptions.exceptions as database_exceptions
@@ -43,43 +43,46 @@ class DBHandler:
     def remove_session(self):
         self.db_session.remove()
 
-    def get_chat_id_to_command_and_state_row(self, chat_id):
-        filter_condition = (chat_id_to_command_and_state_model.ChatIDToCommandAndState.chat_id == chat_id)
-        return chat_id_to_command_and_state_model.ChatIDToCommandAndState.query.filter(filter_condition).first()
+    def get_chat(self, chat_id):
+        filter_condition = (chats_model.Chat.chat_id == chat_id)
+        return chats_model.Chat.query.filter(filter_condition).first()
 
     def get_command_and_state(self, chat_id):
-        command_and_state_row = self.get_chat_id_to_command_and_state_row(chat_id)
-        return command_and_state_row.command, command_and_state_row.state
+        chat = self.get_chat(chat_id)
+        return chat.command, chat.state
 
-    def create_chat_id_to_command_and_state_if_not_exists(self, chat_id):
-        command_and_state_row = self.get_chat_id_to_command_and_state_row(chat_id)
-        if not command_and_state_row:
-            self.create_chat_id_to_command_and_state(chat_id)
+    def create_chat_if_not_exists(self, chat_id):
+        chat = self.get_chat(chat_id)
+        if not chat:
+            self.create_chat(chat_id)
 
     @with_session_commit
-    def create_chat_id_to_command_and_state(self, chat_id):
-        chat_id_to_state = chat_id_to_command_and_state_model.ChatIDToCommandAndState(chat_id=chat_id)
-        self.db_session.add(chat_id_to_state)
+    def create_chat(self, chat_id):
+        chat = chats_model.Chat(chat_id=chat_id)
+        self.db_session.add(chat)
 
     def reset_command_and_state(self, char_id):
         self.set_command_and_state(char_id, CommandsEnum.NOTHING, StatesEnum.NOTHING)
 
     @with_session_commit
     def set_state(self, chat_id, state):
-        command_and_state_row = self.get_chat_id_to_command_and_state_row(chat_id)
-        if not command_and_state_row:
-            raise database_exceptions.ItemNotFountError('There is no command_and_state_row with chat_id={}'.format(chat_id))
+        chat = self.get_chat(chat_id)
+        if not chat:
+            raise database_exceptions.ItemNotFountError('There is no chat with chat_id={}'.format(chat_id))
 
-        command_and_state_row.state = state
+        chat.state = state
 
     @with_session_commit
     def set_command_and_state(self, chat_id, command, state):
-        command_and_state_row = self.get_chat_id_to_command_and_state_row(chat_id)
-        if not command_and_state_row:
-            raise database_exceptions.ItemNotFountError('There is no command_and_state_row with chat_id={}'.format(chat_id))
+        chat = self.get_chat(chat_id)
+        if not chat:
+            raise database_exceptions.ItemNotFountError('There is no chat with chat_id={}'.format(chat_id))
 
-        command_and_state_row.command = command
-        command_and_state_row.state = state
+        chat.command = command
+        chat.state = state
+
+    def get_all_chats(self):
+        return chats_model.Chat.query.all()
 
     def get_user(self, chat_id, user_id):
         filter_condition = (users_model.User.chat_id == chat_id and users_model.User.user_id == user_id)
@@ -107,25 +110,32 @@ class DBHandler:
             self.db_session.add(user)
 
     def get_corona_info(self, region, country):
-        filter_condition = (corona_infos_model.CoronaInfos.region == region and corona_infos_model.CoronaInfos.country == country)
-        return corona_infos_model.CoronaInfos.query.filter(filter_condition).first()
+        model = corona_infos_model.REGION_TO_MODEL['region']
+        return model.query.filter(model.country == country).first()
 
     @with_session_commit
-    def update_corona_info_row(self, region, country, border_info, requirement_info):
+    def compare_and_update_corona_info_row(self, region, country, border_info, requirement_info):
         corona_info_row = self.get_corona_info(region, country)
         if corona_info_row:
+            changed = corona_info_row.border_info != border_info or corona_info_row.requirement_info != requirement_info
             corona_info_row.border_info = border_info
             corona_info_row.requirement_info = requirement_info
+            return changed
         else:
-            corona_info_row = corona_infos_model.CoronaInfos(
-                region=region,
+            model = corona_infos_model.REGION_TO_MODEL['region']
+            corona_info_row = model(
                 country=country,
                 border_info=border_info,
                 requirement_info=requirement_info,
             )
             self.db_session.add(corona_info_row)
+            return False
 
-    def upload_corona_infos(self, corona_infos):
+    def get_changed_and_upload_corona_infos(self, corona_infos):
+        changed_contries = []
         for region, corona_infos_for_countries in corona_infos.items():
             for country, corona_infos in corona_infos_for_countries.items():
-                self.update_corona_info_row(region, country, corona_infos[CoronaInfoType.BORDERS], corona_infos[CoronaInfoType.REQUIREMENTS])
+                changed = self.compare_and_update_corona_info_row(region, country, corona_infos[CoronaInfoType.BORDERS], corona_infos[CoronaInfoType.REQUIREMENTS])
+                if changed:
+                    changed_contries.append(country)
+        return changed_contries
