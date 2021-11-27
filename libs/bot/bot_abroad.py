@@ -161,7 +161,8 @@ class BotAbroad:
         elif chat.state == states_constants.StatesEnum.COUNTRY_SELECTION:
             # если ожидался ввод страны
             if chat.command == commands_constants.CommandsEnum.SUBSCRIPTIONS:
-                if chat.subcommand == commands_constants.SubcommandsEnum.ADD:
+                # работаем с подписками
+                if chat.subcommand == commands_constants.SubcommandsEnum.ADD:  # добавляем страну в подписки
                     try:
                         self.db_handler.add_subscription(chat, text)
                         self._send_message('В ваши подписки была добавлена страна {}'.format(text), reply_markup=telegram.ReplyKeyboardRemove())
@@ -169,7 +170,7 @@ class BotAbroad:
                         # если сработало данное исключение, то значит введенной страны нет в базе
                         self._send_message('\n'.join(('Похоже, что такой страны нет в базе или вы ввели её неправильно(',
                                                       'Выберите страну из списка.')))
-                elif chat.subcommand == commands_constants.SubcommandsEnum.REMOVE:
+                elif chat.subcommand == commands_constants.SubcommandsEnum.REMOVE:  # удаляем страну из подписок
                     self.db_handler.remove_subscription(chat, text)
                     self._send_message('Из ваших подписок была удалена страна {}'.format(text), reply_markup=telegram.ReplyKeyboardRemove())
                 else:
@@ -177,6 +178,7 @@ class BotAbroad:
                 self.db_handler.reset_chat_settings(self.chat)
 
             else:
+                # ищем ограничения
                 self._send_message('Минуточку, бот ищет данные...', reply_markup=telegram.ReplyKeyboardRemove())
                 self._send_typing_action()
                 try:
