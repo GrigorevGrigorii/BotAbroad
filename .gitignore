@@ -132,3 +132,4 @@ dmypy.json
 temp.py
 .idea/
 !database/lib/
+*.py.swp

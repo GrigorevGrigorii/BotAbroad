@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request
 
-from database.lib.handler import Handler
+from database.lib.handler import DBHandler
 from libs.bot.bot_abroad import get_bot_abroad
 
 
@@ -18,8 +18,8 @@ def respond():
         # если произошло действие, но это действие не отправка сообщения
         return 'ok'
 
-    with Handler() as handler:
-        bot = get_bot_abroad(handler, update)
+    with DBHandler() as db_handler:
+        bot = get_bot_abroad(db_handler, update)
         bot.message_processing(update['message'].get('text'))  # обработка сообщения
 
     return 'ok'

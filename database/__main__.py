@@ -8,6 +8,7 @@ Base = declarative_base()
 
 
 def init_db():
-    from database.models import chat_id_to_command_and_state
+    from database.models import chats
     from database.models import users
+    from database.models import corona_infos
     Base.metadata.create_all(bind=engine)
