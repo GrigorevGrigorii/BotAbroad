@@ -33,6 +33,15 @@ def get_region_by_country(country):
     raise corona_exceptions.CountryNotFoundError(country)
 
 
+def country_exists(country):
+    """Функция для проверки существования страны"""
+
+    for countries in corona_constants.REGION_TO_COUNTRIES.values():
+        if country in countries:
+            return True
+    return False
+
+
 def _get_article_href(region):
     """Функция для получения ссылки на страницу с информацией о данной стране"""
 

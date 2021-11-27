@@ -8,10 +8,11 @@ from database.__main__ import engine, Base
 import database.models.chats as chats_model
 import database.models.users as users_model
 import database.models.corona_infos as corona_infos_model
-import database.exceptions.exceptions as database_exceptions
 from libs.constants.states import StatesEnum
-from libs.constants.commands import CommandsEnum
+from libs.constants.commands import CommandsEnum, SubcommandsEnum
 from libs.constants.corona import CoronaInfoType
+from libs.corona import corona_restrictions
+from libs.corona import exceptions as corona_exceptions
 
 
 logger = logging.getLogger(__name__)
@@ -47,47 +48,51 @@ class DBHandler:
         filter_condition = (chats_model.Chat.chat_id == chat_id)
         return chats_model.Chat.query.filter(filter_condition).first()
 
-    def get_command_and_state(self, chat_id):
-        chat = self.get_chat(chat_id)
-        return chat.command, chat.state
-
+    @with_session_commit
     def create_chat_if_not_exists(self, chat_id):
         chat = self.get_chat(chat_id)
         if not chat:
-            self.create_chat(chat_id)
+            chat = chats_model.Chat(chat_id=chat_id)
+            self.db_session.add(chat)
 
     @with_session_commit
-    def create_chat(self, chat_id):
-        chat = chats_model.Chat(chat_id=chat_id)
-        self.db_session.add(chat)
-
-    def reset_command_and_state(self, char_id):
-        self.set_command_and_state(char_id, CommandsEnum.NOTHING, StatesEnum.NOTHING)
+    def reset_chat_settings(self, chat):
+        chat.command = CommandsEnum.NOTHING
+        chat.subcommand = SubcommandsEnum.NOTHING
+        chat.state = StatesEnum.NOTHING
 
     @with_session_commit
-    def set_state(self, chat_id, state):
-        chat = self.get_chat(chat_id)
-        if not chat:
-            raise database_exceptions.ItemNotFountError('There is no chat with chat_id={}'.format(chat_id))
-
+    def set_state(self, chat, state):
         chat.state = state
 
     @with_session_commit
-    def set_command(self, chat_id, command):
-        chat = self.get_chat(chat_id)
-        if not chat:
-            raise database_exceptions.ItemNotFountError('There is no chat with chat_id={}'.format(chat_id))
-
+    def set_command(self, chat, command):
         chat.command = command
 
     @with_session_commit
-    def set_command_and_state(self, chat_id, command, state):
-        chat = self.get_chat(chat_id)
-        if not chat:
-            raise database_exceptions.ItemNotFountError('There is no chat with chat_id={}'.format(chat_id))
+    def set_subcommand(self, chat, subcommand):
+        chat.subcommand = subcommand
 
+    @with_session_commit
+    def set_command_and_state(self, chat, command, state):
         chat.command = command
         chat.state = state
+
+    @with_session_commit
+    def add_subscription(self, chat, country):
+        if not corona_restrictions.country_exists(country):
+            raise corona_exceptions.CountryNotFoundError(country)
+
+        subscriptions = set(chat.subscriptions)
+        subscriptions.add(country)
+        chat.subscriptions = list(subscriptions)
+
+    @with_session_commit
+    def remove_subscription(self, chat, country):
+        if country in chat.subscriptions:
+            subscriptions = list(chat.subscriptions)
+            subscriptions.remove(country)
+            chat.subscriptions = subscriptions
 
     def get_all_chats(self):
         return chats_model.Chat.query.all()
@@ -118,7 +123,7 @@ class DBHandler:
             self.db_session.add(user)
 
     def get_corona_info(self, region, country):
-        model = corona_infos_model.REGION_TO_MODEL['region']
+        model = corona_infos_model.REGION_TO_MODEL[region]
         return model.query.filter(model.country == country).first()
 
     @with_session_commit
@@ -130,7 +135,7 @@ class DBHandler:
             corona_info_row.requirement_info = requirement_info
             return changed
         else:
-            model = corona_infos_model.REGION_TO_MODEL['region']
+            model = corona_infos_model.REGION_TO_MODEL[region]
             corona_info_row = model(
                 country=country,
                 border_info=border_info,

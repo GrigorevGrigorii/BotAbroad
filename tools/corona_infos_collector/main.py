@@ -1,4 +1,3 @@
-import argparse
 import logging
 
 from database.lib.handler import DBHandler
@@ -8,12 +7,7 @@ from libs.bot.bot_abroad import BotAbroad
 logger = logging.getLogger(__name__)
 
 
-def parse_args(command_args=None):
-    parser = argparse.ArgumentParser()
-    return parser.parse_args(command_args)
-
-
-def main(command_args=None):
+def main():
     def _main(handler):
         corona_infos = {}
         for region in corona_restrictions.get_regions():
@@ -24,12 +18,10 @@ def main(command_args=None):
 
         all_chats = handler.get_all_chats()
         for chat in all_chats:
-            changed_countries_from_subsciptions = changed_countries & set(chat.subsciptions)
-            if changed_countries_from_subsciptions:
+            changed_countries_from_subscriptions = changed_countries & set(chat.subsciptions)
+            if changed_countries_from_subscriptions:
                 with BotAbroad(handler, chat.chat_id) as bot_abroad:
-                    bot_abroad.send_info_about_subscriptions(changed_countries_from_subsciptions)
-
-    args = parse_args(command_args)
+                    bot_abroad.send_info_about_subscriptions(changed_countries_from_subscriptions)
 
     logger.info('Start collecting corona infos')
     with DBHandler() as handler:

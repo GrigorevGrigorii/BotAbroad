@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, Text
+from sqlalchemy import Column, Integer, Text, ARRAY
 from database.__main__ import Base
 
 from libs.constants.states import StatesEnum
-from libs.constants.commands import CommandsEnum
+from libs.constants.commands import CommandsEnum, SubcommandsEnum
 from libs.constants.corona import CoronaInfoType
 
 
@@ -21,8 +21,9 @@ class Chat(Base):
 
     chat_id = Column(Integer, primary_key=True)
     command = Column(Text, default=CommandsEnum.NOTHING)
+    subcommand = Column(Text, default=SubcommandsEnum.NOTHING)
     state = Column(Text, default=StatesEnum.NOTHING)
-    subsciptions = Column(, default=[])  # TODO: make list
+    subscriptions = Column(ARRAY(Text), default=[])
 
     def __repr__(self):
         return f"<Chat: chat_id={self.chat_id}, command={self.command}, state={self.state}>"
