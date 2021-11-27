@@ -20,8 +20,8 @@ def main():
         for chat in all_chats:
             changed_countries_from_subscriptions = changed_countries & set(chat.subscriptions)
             if changed_countries_from_subscriptions:
-                with BotAbroad(handler, chat.chat_id) as bot_abroad:
-                    bot_abroad.send_info_about_subscriptions(changed_countries_from_subscriptions)
+                bot_abroad = BotAbroad(handler, chat.chat_id)
+                bot_abroad.send_info_about_subscriptions(changed_countries_from_subscriptions)
 
     logger.info('Start collecting corona infos')
     with DBHandler() as handler:
