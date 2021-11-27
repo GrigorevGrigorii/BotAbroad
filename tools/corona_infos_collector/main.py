@@ -18,7 +18,7 @@ def main():
 
         all_chats = handler.get_all_chats()
         for chat in all_chats:
-            changed_countries_from_subscriptions = changed_countries & set(chat.subsciptions)
+            changed_countries_from_subscriptions = changed_countries & set(chat.subscriptions)
             if changed_countries_from_subscriptions:
                 with BotAbroad(handler, chat.chat_id) as bot_abroad:
                     bot_abroad.send_info_about_subscriptions(changed_countries_from_subscriptions)
