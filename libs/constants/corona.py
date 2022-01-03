@@ -38,4 +38,4 @@ REGION_TO_KEY_ARTICLE_NAME_PART = {
     Region.AFRICA: 'Африки, Ближнего и Среднего Востока',
 }
 
-MID_PAGE_URL_TEMPLATE = "https://www.mid.ru/ru/informacia-dla-rossijskih-i-inostrannyh-grazdan-v-svazi-s-koronavirusnoj-infekciej?p_p_id=101_INSTANCE_UUDFpNltySPE&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&p_p_col_id=column-1&p_p_col_pos=1&p_p_col_count=2&_101_INSTANCE_UUDFpNltySPE_delta=20&_101_INSTANCE_UUDFpNltySPE_keywords=&_101_INSTANCE_UUDFpNltySPE_advancedSearch=false&_101_INSTANCE_UUDFpNltySPE_andOperator=true&p_r_p_564233524_resetCur=false&_101_INSTANCE_UUDFpNltySPE_cur={page}"
+MID_PAGE_URL_TEMPLATE = "https://mid.ru/ru/informatsiya_dlya_rossiyskikh_i_inostrannykh_grazhdan_v_svyazi_s_koronavirusnoy_infektsiey/?PAGEN_1={page}"
