@@ -12,6 +12,7 @@ app = Flask(__name__)
 def respond():
     """Обработка поступающих от Телеграма запросов"""
 
+    return 'ok'
     update = request.get_json(force=True)
 
     if 'message' not in update:
